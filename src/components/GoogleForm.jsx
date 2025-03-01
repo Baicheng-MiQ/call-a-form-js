@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { googleConfig } from '../config/googleAuth';
+import { googleConfig } from '../env';
 
 export default function GoogleForm({ formId }) {
   const [formData, setFormData] = useState({ formId });

@@ -1,34 +1,29 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
+import GoogleForm from './components/GoogleForm'
+import { useState } from 'react'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [formId, setFormId] = useState("1oS9FDXpeXhnRzCgd_tXjyYXXFhlH5pvDS8RlgoNWkos")
+  const [loadedFormId, setLoadedFormId] = useState("")
+  
+  const handleLoad = () => {
+    setLoadedFormId(formId)
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="app-container">
+      <div className="form-controls">
+        <input 
+          type="text" 
+          value={formId} 
+          onChange={(e) => setFormId(e.target.value)}
+          placeholder="Enter Google Form ID"
+        />
+        <button onClick={handleLoad}>Load Form</button>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+      
+      {loadedFormId && <GoogleForm formId={loadedFormId} />}
+    </div>
   )
 }
 
