@@ -54,7 +54,7 @@ export default function GoogleForm({ formId, onFormLoaded }) {
         if (!response.ok) throw new Error('Failed to fetch form');
         const data = await response.json();
         // console.log(data);
-        
+
         // Transform the data into the requested format
         const transformedData = {
           title: data.title || data.info?.title || 'Untitled Form',
@@ -64,7 +64,7 @@ export default function GoogleForm({ formId, onFormLoaded }) {
             // Convert hex questionId to decimal
             const hexId = question?.questionId;
             const decimalId = hexId ? parseInt(hexId, 16) : null;
-            
+
             return {
               id: decimalId,
               title: item.title,
@@ -76,11 +76,60 @@ export default function GoogleForm({ formId, onFormLoaded }) {
           }) || []
         };
         
-        // Call the onFormLoaded callback with the transformed data
-        if (onFormLoaded) {
-          onFormLoaded(transformedData);
-        }
+        const generateOpenAISchema = (formData) => {
+          const properties = {};
+          const required = [];
+          
+          formData.questions.forEach(question => {
+            const propName = question.title
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, '_')
+              .replace(/_+/g, '_')
+              .replace(/^_|_$/g, '');
+              
+            if (question.required) {
+              required.push(propName);
+            }
+            
+            if (question.type === 'TEXT') {
+              properties[propName] = {
+                type: "string",
+                description: `${question.title}`
+              };
+            } else if (question.type === 'RADIO' || question.type === 'CHECKBOX') {
+              const enumValues = question.options.map(opt => opt.value).filter(val => val);
+              
+              properties[propName] = {
+                type: "string",
+                description: `${question.title}`,
+                enum: enumValues.length > 0 ? enumValues : undefined
+              };
+            }
+          });
+          
+          return {
+            name: "generate_google_form",
+            description: `Getting details for ${formData.title}`,
+            parameters: {
+              type: "object",
+              properties: properties,
+              required: required,
+              additionalProperties: false
+            }
+          };
+        };
         
+        const schema = generateOpenAISchema(transformedData);
+        
+        // Output schema to console
+        console.log("Generated OpenAI Schema:");
+        console.log(JSON.stringify(schema, null, 2));
+        
+        // Call the onFormLoaded callback with both transformed data and schema
+        if (onFormLoaded) {
+          onFormLoaded(transformedData, schema);
+        }
+
         setFormData({ formId, info: data });
       } catch {
         setFormData({ formId, error: 'Failed to fetch form data' });
@@ -115,19 +164,19 @@ export default function GoogleForm({ formId, onFormLoaded }) {
           const options = question?.choiceQuestion?.options || [];
           const hexId = question?.questionId;
           const decimalId = hexId ? parseInt(hexId, 16) : null;
-          
+
           return (
             <div key={item.itemId} className="border p-4 rounded-lg shadow-sm">
               <div className="flex items-center gap-2 mb-2">
                 <h2 className="text-lg font-medium">{item.title}</h2>
                 {question?.required && <span className="text-red-500 text-sm">*Required</span>}
               </div>
-              
+
               <div className="text-sm text-gray-500 mb-2">
                 <span>ID: {decimalId} (hex: {hexId})</span>
                 <span className="ml-3">Type: {type}</span>
               </div>
-              
+
               {isChoice && (
                 <div className="mt-2">
                   {type === 'RADIO' && (
@@ -140,7 +189,7 @@ export default function GoogleForm({ formId, onFormLoaded }) {
                       ))}
                     </div>
                   )}
-                  
+
                   {type === 'CHECKBOX' && (
                     <div className="flex flex-col gap-2">
                       {options.map((option, idx) => (
@@ -153,7 +202,7 @@ export default function GoogleForm({ formId, onFormLoaded }) {
                   )}
                 </div>
               )}
-              
+
               {isText && (
                 <div className="mt-2">
                   <input 
