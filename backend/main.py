@@ -64,6 +64,9 @@ async def handle_media_stream(websocket: WebSocket):
     ) as openai_ws:
         await initialize_session(openai_ws)
         stream_sid = None
+        active_response_id = None
+        active_item_id = None
+        is_assistant_speaking = False
 
         async def receive_from_twilio():
             """Receive audio data from Twilio and send it to the OpenAI Realtime API."""
@@ -87,14 +90,47 @@ async def handle_media_stream(websocket: WebSocket):
 
         async def send_to_twilio():
             """Receive events from the OpenAI Realtime API, send audio back to Twilio."""
-            nonlocal stream_sid
+            nonlocal stream_sid, active_response_id, active_item_id, is_assistant_speaking
             try:
                 async for openai_message in openai_ws:
                     response = json.loads(openai_message)
                     if response['type'] in LOG_EVENT_TYPES:
                         print(f"Received event: {response['type']}", response)
-                    if response['type'] == 'session.updated':
-                        print("Session updated successfully:", response)
+                    
+                    # Track active response and item IDs
+                    if response['type'] == 'response.created':
+                        active_response_id = response['response']['id']
+                        is_assistant_speaking = True
+                    elif response['type'] == 'response.output_item.added' and response.get('item', {}).get('role') == 'assistant':
+                        active_item_id = response['item']['id']
+                    elif response['type'] == 'response.done':
+                        is_assistant_speaking = False
+                        active_response_id = None
+                        active_item_id = None
+                    
+                    # Handle speech detection for interruption
+                    elif response['type'] == 'input_audio_buffer.speech_started' and is_assistant_speaking:
+                        print("User started speaking while assistant was talking - interrupting!")
+                        
+                        # Cancel the ongoing response first
+                        if active_response_id:
+                            cancel_event = {
+                                "type": "response.cancel",
+                                "response_id": active_response_id
+                            }
+                            await openai_ws.send(json.dumps(cancel_event))
+                        
+                        # Then truncate the assistant's speech
+                        if active_item_id:
+                            truncate_event = {
+                                "type": "conversation.item.truncate",
+                                "item_id": active_item_id,
+                                "content_index": 0,
+                                "audio_end_ms": response.get('audio_start_ms', 0)
+                            }
+                            await openai_ws.send(json.dumps(truncate_event))
+                    
+                    # Handle audio deltas
                     if response['type'] == 'response.audio.delta' and response.get('delta'):
                         try:
                             audio_payload = base64.b64encode(base64.b64decode(response['delta'])).decode('utf-8')
@@ -110,6 +146,7 @@ async def handle_media_stream(websocket: WebSocket):
                             print(f"Error processing audio data: {e}")
             except Exception as e:
                 print(f"Error in send_to_twilio: {e}")
+
         await asyncio.gather(receive_from_twilio(), send_to_twilio())
 
 async def send_initial_conversation_item(openai_ws):
@@ -139,7 +176,13 @@ async def initialize_session(openai_ws):
     session_update = {
         "type": "session.update",
         "session": {
-            "turn_detection": {"type": "server_vad"},
+            "turn_detection": {
+                "type": "server_vad",
+                "threshold": 0.3,               # Lower threshold to detect speech more easily
+                "prefix_padding_ms": 100,       # Reduced padding to make interruption more responsive
+                "silence_duration_ms": 600,     # Increased silence duration for better turn detection
+                "create_response": True         # Auto-create response when speech ends
+            },
             "input_audio_format": "g711_ulaw",
             "output_audio_format": "g711_ulaw",
             "voice": VOICE,
