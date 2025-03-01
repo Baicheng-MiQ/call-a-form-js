@@ -3,7 +3,7 @@ import json
 import base64
 import asyncio
 import argparse
-from fastapi import FastAPI, WebSocket, BackgroundTasks
+from fastapi import FastAPI, WebSocket, BackgroundTasks, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.websockets import WebSocketDisconnect
 from twilio.rest import Client
@@ -158,11 +158,6 @@ async def initialize_session(openai_ws):
 async def check_number_allowed(to):
     """Check if a number is allowed to be called."""
     try:
-        # Uncomment these lines to test numbers. Only add numbers you have permission to call
-        # OVERRIDE_NUMBERS = ['+18005551212'] 
-        # if to in OVERRIDE_NUMBERS:             
-          # return True
-
         incoming_numbers = client.incoming_phone_numbers.list(phone_number=to)
         if incoming_numbers:
             return True
@@ -207,20 +202,28 @@ async def log_call_sid(call_sid):
     """Log the call SID."""
     print(f"Call started with SID: {call_sid}")
 
+@app.get('/calluser')
+async def call_user(number: str, background_tasks: BackgroundTasks):
+    """Endpoint to initiate a call to a user."""
+    if not number:
+        raise HTTPException(status_code=400, detail="Please provide a phone number to call.")
+    
+    try:
+        background_tasks.add_task(make_call, number)
+        return {"message": f"Call initiated to {number}"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error initiating call: {str(e)}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the Twilio AI voice assistant server.")
-    parser.add_argument('--call', required=True, help="The phone number to call, e.g., '--call=+18005551212'")
+    parser.add_argument('--call', required=False, help="The phone number to call, e.g., '--call=+18005551212'")
     args = parser.parse_args()
 
-    phone_number = args.call
-    print(
-        'Our recommendation is to always disclose the use of AI for outbound or inbound calls.\n'
-        'Reminder: All of the rules of TCPA apply even if a call is made by AI.\n'
-        'Check with your counsel for legal and compliance advice.'
-    )
-
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(make_call(phone_number))
+    if args.call:
+        phone_number = args.call
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(make_call(phone_number))
     
     uvicorn.run(app, host="0.0.0.0", port=PORT)
