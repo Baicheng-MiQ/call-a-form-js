@@ -61,8 +61,12 @@ export default function GoogleForm({ formId, onFormLoaded }) {
           description: data.description || data.info?.description || '',
           questions: data.items?.map(item => {
             const question = item.questionItem?.question;
+            // Convert hex questionId to decimal
+            const hexId = question?.questionId;
+            const decimalId = hexId ? parseInt(hexId, 16) : null;
+            
             return {
-              id: question?.questionId,
+              id: decimalId,
               title: item.title,
               required: question?.required || false,
               type: question?.textQuestion ? 'TEXT' : 
