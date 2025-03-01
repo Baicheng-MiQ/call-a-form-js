@@ -99,19 +99,74 @@ export default function GoogleForm({ formId, onFormLoaded }) {
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold">{formData.info.info?.title || 'Untitled Form'}</h1>
-      <div className="text-sm">
+    <div className="p-4 max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold mb-2">{formData.info.info?.title || 'Untitled Form'}</h1>
+      <div className="text-sm mb-6">
         {formData.info.info?.description && (
-          <p>{formData.info.info.description}</p>
+          <p className="whitespace-pre-line">{formData.info.info.description}</p>
         )}
       </div>
-      <div className="flex flex-col gap-4">
-        {formData.info.items?.map((item) => (
-          <div key={item.id}>
-            <h2>{item.title}</h2>
-          </div>
-        ))}
+      <div className="flex flex-col gap-6">
+        {formData.info.items?.map((item) => {
+          const question = item.questionItem?.question;
+          const isText = !!question?.textQuestion;
+          const isChoice = !!question?.choiceQuestion;
+          const type = isText ? 'TEXT' : question?.choiceQuestion?.type || 'UNKNOWN';
+          const options = question?.choiceQuestion?.options || [];
+          const hexId = question?.questionId;
+          const decimalId = hexId ? parseInt(hexId, 16) : null;
+          
+          return (
+            <div key={item.itemId} className="border p-4 rounded-lg shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="text-lg font-medium">{item.title}</h2>
+                {question?.required && <span className="text-red-500 text-sm">*Required</span>}
+              </div>
+              
+              <div className="text-sm text-gray-500 mb-2">
+                <span>ID: {decimalId} (hex: {hexId})</span>
+                <span className="ml-3">Type: {type}</span>
+              </div>
+              
+              {isChoice && (
+                <div className="mt-2">
+                  {type === 'RADIO' && (
+                    <div className="flex flex-col gap-2">
+                      {options.map((option, idx) => (
+                        <div key={idx} className="flex items-center">
+                          <input type="radio" disabled className="mr-2" />
+                          <span>{option.isOther ? 'Other...' : option.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {type === 'CHECKBOX' && (
+                    <div className="flex flex-col gap-2">
+                      {options.map((option, idx) => (
+                        <div key={idx} className="flex items-center">
+                          <input type="checkbox" disabled className="mr-2" />
+                          <span>{option.isOther ? 'Other...' : option.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {isText && (
+                <div className="mt-2">
+                  <input 
+                    type="text" 
+                    disabled 
+                    placeholder="Text answer" 
+                    className="w-full p-2 border rounded text-gray-400"
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
