@@ -44,6 +44,7 @@ if not (TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and PHONE_NUMBER_FROM and OPENA
 # Initialize Twilio client
 client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
+
 @app.get('/', response_class=JSONResponse)
 async def index_page():
     return {"message": "Twilio Media Stream Server is running!"}
@@ -55,7 +56,7 @@ async def handle_media_stream(websocket: WebSocket):
     await websocket.accept()
 
     async with websockets.connect(
-        'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17',
+        'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01',
         extra_headers={
             "Authorization": f"Bearer {OPENAI_API_KEY}",
             "OpenAI-Beta": "realtime=v1"
@@ -111,7 +112,6 @@ async def handle_media_stream(websocket: WebSocket):
                 print(f"Error in send_to_twilio: {e}")
         await asyncio.gather(receive_from_twilio(), send_to_twilio())
 
-
 async def send_initial_conversation_item(openai_ws):
     """Send initial conversation so AI talks first."""
     initial_conversation_item = {
@@ -145,7 +145,7 @@ async def initialize_session(openai_ws):
             "voice": VOICE,
             "instructions": SYSTEM_MESSAGE,
             "modalities": ["text", "audio"],
-            "temperature": 0.1,
+            "temperature": 0.8,
         }
     }
     print('Sending session update:', json.dumps(session_update))
@@ -154,11 +154,41 @@ async def initialize_session(openai_ws):
     # Have the AI speak first
     await send_initial_conversation_item(openai_ws)
 
+
+async def check_number_allowed(to):
+    """Check if a number is allowed to be called."""
+    try:
+        # Uncomment these lines to test numbers. Only add numbers you have permission to call
+        # OVERRIDE_NUMBERS = ['+18005551212'] 
+        # if to in OVERRIDE_NUMBERS:             
+          # return True
+
+        incoming_numbers = client.incoming_phone_numbers.list(phone_number=to)
+        if incoming_numbers:
+            return True
+
+        outgoing_caller_ids = client.outgoing_caller_ids.list(phone_number=to)
+        if outgoing_caller_ids:
+            return True
+
+        return False
+    except Exception as e:
+        print(f"Error checking phone number: {e}")
+        return False
     
+
 async def make_call(phone_number_to_call: str):
     """Make an outbound call."""
     if not phone_number_to_call:
         raise ValueError("Please provide a phone number to call.")
+
+    is_allowed = await check_number_allowed(phone_number_to_call)
+    if not is_allowed:
+        raise ValueError(f"The number {phone_number_to_call} is not recognized as a valid outgoing number or caller ID.")
+
+    # Ensure compliance with applicable laws and regulations
+    # All of the rules of TCPA apply even if a call is made by AI.
+    # Do your own diligence for compliance.
 
     outbound_twiml = (
         f'<?xml version="1.0" encoding="UTF-8"?>'
@@ -179,22 +209,18 @@ async def log_call_sid(call_sid):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Run the Twilio Media Stream Server')
-    parser.add_argument('--call', type=str, help='Phone number to call')
-    parser.add_argument('--port', type=int, default=PORT, help='Port to run the server on (default: from env or 6060)')
+    parser = argparse.ArgumentParser(description="Run the Twilio AI voice assistant server.")
+    parser.add_argument('--call', required=True, help="The phone number to call, e.g., '--call=+18005551212'")
     args = parser.parse_args()
+
+    phone_number = args.call
+    print(
+        'Our recommendation is to always disclose the use of AI for outbound or inbound calls.\n'
+        'Reminder: All of the rules of TCPA apply even if a call is made by AI.\n'
+        'Check with your counsel for legal and compliance advice.'
+    )
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(make_call(phone_number))
     
-    # Create a background task to make the call after the server starts
-    if args.call:
-        @app.on_event("startup")
-        async def startup_call_task():
-            # Wait a moment for the server to fully start
-            await asyncio.sleep(2)
-            try:
-                await make_call(args.call)
-                print(f"Call initiated to {args.call}")
-            except Exception as e:
-                print(f"Error making call: {e}")
-    
-    # Always run the server
-    uvicorn.run(app, host="0.0.0.0", port=args.port)
+    uvicorn.run(app, host="0.0.0.0", port=PORT)
