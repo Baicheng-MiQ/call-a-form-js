@@ -122,8 +122,8 @@ export default function GoogleForm({ formId, onFormLoaded }) {
         const schema = generateOpenAISchema(transformedData);
         
         // Output schema to console
-        console.log("Generated OpenAI Schema:");
-        console.log(JSON.stringify(schema, null, 2));
+        // console.log("Generated OpenAI Schema:");
+        // console.log(JSON.stringify(schema, null, 2));
         
         // Call the onFormLoaded callback with both transformed data and schema
         if (onFormLoaded) {
@@ -137,7 +137,7 @@ export default function GoogleForm({ formId, onFormLoaded }) {
     };
 
     fetchForm();
-  }, [formId, accessToken, onFormLoaded]);
+  }, [formId, accessToken]);
 
   if (formData.error) {
     return <div>Error: {formData.error}</div>;
