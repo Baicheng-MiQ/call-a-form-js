@@ -48,15 +48,15 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 py-10">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl space-y-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8  space-y-8">
         <motion.div 
           initial={{ opacity: 0, y: -20 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ duration: 0.6 }}
         >
-          <Card className="overflow-hidden shadow-xl rounded-xl border-0">
-            <div className="p-8 bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-              <h1 className="text-4xl font-bold mb-3">Form Agent</h1>
+          <Card className="overflow-hidden shadow-xl rounded-xl border-0 p-0">
+            <div className="p-8 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+              <h1 className="text-4xl font-bold mb-3">FormAgent</h1>
               <p className="text-lg opacity-90">Build your own AI agent, Zero code needed.</p>
             </div>
           </Card>
