@@ -248,8 +248,8 @@ class CallActions(llm.FunctionContext):
         
         try:
             response = requests.post(base_url, data=params)
-            if response.status_code in [200, 302]:  # Google Forms typically returns 302
-                print(f"Form submitted successfully: {name}, {email}, {organization}, {what_days_will_you_attend}, {dietary_restrictions}, {i_understand_that_i_will_have_to_pay_upon_arrival}")
+            if response.status_code:  # Google Forms typically returns 302
+                print(f"Form submitted successfully: {name}, {email}, {what_days_will_you_attend}, {dietary_restrictions}, {i_understand_that_i_will_have_to_pay_upon_arrival}")
                 return "Form submitted successfully"
             else:
                 return f"Form submission failed with status code: {response.status_code}"
