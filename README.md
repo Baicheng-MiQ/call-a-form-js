@@ -1,12 +1,66 @@
-# React + Vite
+# TalkToForm
+![1740913873540](image/README/1740913873540.png)
+TalkToForm is a tool that helps create AI agents to handle Google Forms interactions via phone calls. It requires zero coding knowledge to set up.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Features
 
-Currently, two official plugins are available:
+- Load any Google Form by ID
+- Automatically generate OpenAI function schemas from form structure
+- Make outbound phone calls with AI agents that can guide users through forms
+- Customizable system instructions for the AI agent
+- Natural voice interaction through phone calls
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Getting Started
 
-## Expanding the ESLint configuration
+### Prerequisites
 
-If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- Node.js (v16+)
+- Python (v3.9+)
+- Google Form ID
+- Google Cloud OAuth credentials
+- OpenAI API key
+
+### Installation
+
+1. Clone the repository
+2. Install frontend dependencies:
+   ```
+   npm install
+   ```
+3. Install backend dependencies:
+   ```
+   cd backend
+   pip install -r requirements.txt
+   ```
+
+### Running the Application
+
+1. Start the frontend:
+   ```
+   npm run dev
+   ```
+2. Start the backend:
+   ```
+   cd backend
+   python main.py
+   ```
+
+## Usage
+
+1. Enter your custom instructions for the AI agent
+2. Input a Google Form ID and click "Load"
+3. Once the form loads, the schema will be generated automatically
+4. Enter a phone number and click "Dial Number" to initiate a call
+5. The AI agent will guide the recipient through the form questions
+
+## Technologies
+
+- React + Vite
+- TailwindCSS
+- FastAPI (Python backend)
+- LiveKit for voice calls
+- OpenAI for the AI agent
+
+## License
+
+MIT

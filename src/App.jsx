@@ -56,7 +56,7 @@ function App() {
         >
           <Card className="overflow-hidden shadow-xl rounded-xl border-0 p-0">
             <div className="p-8 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-              <h1 className="text-4xl font-bold mb-3">FormAgent</h1>
+              <h1 className="text-4xl font-bold mb-3">TalkToForm</h1>
               <p className="text-lg opacity-90">Build your own AI agent, Zero code needed.</p>
             </div>
           </Card>
